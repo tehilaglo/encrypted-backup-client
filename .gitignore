@@ -1,0 +1,70 @@
+# =========================
+# CLion / JetBrains
+# =========================
+.idea/
+*.iml
+
+# =========================
+# CMake build directories
+# =========================
+cmake-build-*/
+build/
+out/
+
+# =========================
+# CMake generated files
+# =========================
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+DartConfiguration.tcl
+Testing/
+_deps/
+
+# =========================
+# Ninja
+# =========================
+build.ninja
+.ninja_deps
+.ninja_log
+rules.ninja
+
+# Compilation database
+compile_commands.json
+
+# =========================
+# Compiled files
+# =========================
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+a.out
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+
+# =========================
+# Secrets / private keys
+# =========================
+.env
+.env.*
+!.env.example
+
+*.pem
+*.key
+*.p12
+*.pfx
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
