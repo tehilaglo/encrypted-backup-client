@@ -1,10 +1,10 @@
-/*
 #include <iostream>
 #include <iomanip>
 #include <string>
 
 #include "protocol/request.h"
 #include "protocol/response.h"
+#include "protocol/protocol_formatting.h"
 
 
 class ResponseHeader;
@@ -53,7 +53,7 @@ std::ostream& operator<<(std::ostream& os, const ResponsePayload& payload) {
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const Request& request) {
+std::ostream& operator<<(std::ostream& os, Request& request) {
     os << "Request: { "
        << request.get_header() << ", "
        << request.get_payload()
@@ -91,4 +91,3 @@ void hexify(const char* buffer, size_t start, size_t end) {
     std::cout << std::endl;  // Ensure a newline at the end
     std::cout.flags(f);  // Restore the original flags
 }
-*/
