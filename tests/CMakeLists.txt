@@ -12,12 +12,14 @@ if(NOT Catch2_FOUND)
 endif()
 
 add_executable(protocol_tests
+    test_file_authentication.cpp
     test_request_serialization.cpp
     test_response_deserialization.cpp
     test_response_malformed.cpp
     test_protocol_fields.cpp
     test_encoding_utils.cpp
     test_protocol_codes.cpp
+
     ../src/protocol/request.cpp
     ../src/protocol/response.cpp
     ../src/utils/encoding_utils.cpp
