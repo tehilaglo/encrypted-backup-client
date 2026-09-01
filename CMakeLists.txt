@@ -1,38 +1,58 @@
+# ==============================================================================
+# Encrypted Backup Client - Build Configuration
+#
+# Configures the main C++ client application, reusable client_core library,
+# third-party dependencies, compiler settings, and optional test targets.
+#
+# Dependencies:
+#   - Boost 1.75+
+#   - Crypto++
+#   - Catch2 (through the tests subdirectory when BUILD_TESTING is enabled)
+#
+# @author Tehila Cahnaman
+# ==============================================================================
+
 cmake_minimum_required(VERSION 3.16)
 
-# Project name. VERSION is optional, so omitted here for simplicity.
 project(client LANGUAGES CXX)
 
 include(CTest)
 
-# --------------------------------------------------
-# C++ standard
-# --------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# C++ configuration
+# ------------------------------------------------------------------------------
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Use Debug by default if no build type was provided.
+# Default to a Debug build when no explicit build type is supplied.
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
 endif()
 
+# Place generated executables in the project root directory.
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-# --------------------------------------------------
+
+# ------------------------------------------------------------------------------
 # Dependencies
-# --------------------------------------------------
+# ------------------------------------------------------------------------------
+
 find_package(Boost 1.75 REQUIRED COMPONENTS system thread stacktrace_basic)
 
-# Try common install locations for Crypto++
-find_path(CRYPTOPP_INCLUDE_DIR
+# Locate Crypto++ in common Homebrew and local installation directories.
+find_path(
+        CRYPTOPP_INCLUDE_DIR
         NAMES cryptopp/aes.h
         HINTS
         /opt/homebrew/include
         /usr/local/include
 )
 
-find_library(CRYPTOPP_LIBRARY
+find_library(
+        CRYPTOPP_LIBRARY
         NAMES cryptopp
         HINTS
         /opt/homebrew/lib
@@ -40,58 +60,68 @@ find_library(CRYPTOPP_LIBRARY
 )
 
 if(NOT CRYPTOPP_INCLUDE_DIR OR NOT CRYPTOPP_LIBRARY)
-    message(FATAL_ERROR "Crypto++ not found. Install it or set CRYPTOPP_INCLUDE_DIR / CRYPTOPP_LIBRARY manually.")
+    message(
+            FATAL_ERROR
+            "Crypto++ not found. Install it or set CRYPTOPP_INCLUDE_DIR / CRYPTOPP_LIBRARY manually."
+    )
 endif()
 
-# --------------------------------------------------
-# Source files
-# --------------------------------------------------
-# Recursively collect all .cpp files under src/
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
+
+# ------------------------------------------------------------------------------
+# Application sources
+# ------------------------------------------------------------------------------
+
+# Collect implementation files recursively from src/.
+file(
+        GLOB_RECURSE SOURCES
+        CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
 
 if(NOT SOURCES)
-    message(FATAL_ERROR
-            "No source files found under ${CMAKE_CURRENT_SOURCE_DIR}/src")
+    message(
+            FATAL_ERROR
+            "No source files found under ${CMAKE_CURRENT_SOURCE_DIR}/src"
+    )
 endif()
 
-# main.cpp belongs only to the executable.
+# main.cpp belongs exclusively to the client executable and is excluded from
+# the reusable client_core library.
 set(CLIENT_MAIN "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
-
 list(REMOVE_ITEM SOURCES "${CLIENT_MAIN}")
 
-# All reusable application logic goes into a library.
-add_library(client_core STATIC
+
+# ------------------------------------------------------------------------------
+# Client core library
+# ------------------------------------------------------------------------------
+
+# Build application logic separately so it can also be linked by test targets.
+add_library(
+        client_core STATIC
         ${SOURCES}
 )
 
-# --------------------------------------------------
-# Include directories
-# --------------------------------------------------
-target_include_directories(client_core PUBLIC
+target_include_directories(
+        client_core PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
         ${CRYPTOPP_INCLUDE_DIR}
 )
 
-# --------------------------------------------------
-# Compiler options
-# --------------------------------------------------
-target_compile_options(client_core PRIVATE
+target_compile_options(
+        client_core PRIVATE
         $<$<CONFIG:Debug>:-g -O0>
         $<$<CONFIG:Release>:-O2>
         $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wpedantic>
 )
 
-# Needed for Boost stacktrace on some platforms/configurations
-target_compile_definitions(client_core PUBLIC
+# Required by the selected Boost.Stacktrace configuration on supported systems.
+target_compile_definitions(
+        client_core PUBLIC
         BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
 )
 
-# --------------------------------------------------
-# Link libraries
-# --------------------------------------------------
-target_link_libraries(client_core PUBLIC
+target_link_libraries(
+        client_core PUBLIC
         Boost::system
         Boost::thread
         Boost::stacktrace_basic
@@ -99,25 +129,48 @@ target_link_libraries(client_core PUBLIC
         ${CMAKE_DL_LIBS}
 )
 
-# Actual application
-add_executable(client
+
+# ------------------------------------------------------------------------------
+# Client executable
+# ------------------------------------------------------------------------------
+
+add_executable(
+        client
         ${CLIENT_MAIN}
 )
 
-target_link_libraries(client PRIVATE
+target_link_libraries(
+        client PRIVATE
         client_core
 )
 
+
+# ------------------------------------------------------------------------------
+# Tests
+# ------------------------------------------------------------------------------
+
+# Test targets are configured separately under tests/.
 if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
 
-# --------------------------------------------------
-# Optional IDE grouping
-# --------------------------------------------------
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" FILES ${SOURCES})
 
-# Helpful configure-time output
+# ------------------------------------------------------------------------------
+# IDE organization
+# ------------------------------------------------------------------------------
+
+# Preserve the src/ directory hierarchy when sources are displayed by supported
+# IDEs and project generators.
+source_group(
+        TREE "${CMAKE_CURRENT_SOURCE_DIR}/src"
+        FILES ${SOURCES}
+)
+
+
+# ------------------------------------------------------------------------------
+# Configuration summary
+# ------------------------------------------------------------------------------
+
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Crypto++ include dir: ${CRYPTOPP_INCLUDE_DIR}")
 message(STATUS "Crypto++ library: ${CRYPTOPP_LIBRARY}")
