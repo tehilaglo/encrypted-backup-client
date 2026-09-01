@@ -12,22 +12,17 @@ if(NOT Catch2_FOUND)
 endif()
 
 add_executable(protocol_tests
-    test_file_authentication.cpp
-    test_request_serialization.cpp
-    test_response_deserialization.cpp
-    test_response_malformed.cpp
-    test_protocol_fields.cpp
-    test_encoding_utils.cpp
-    test_protocol_codes.cpp
-
-    ../src/protocol/request.cpp
-    ../src/protocol/response.cpp
-    ../src/utils/encoding_utils.cpp
+        test_file_authentication.cpp
+        test_request_serialization.cpp
+        test_response_deserialization.cpp
+        test_response_malformed.cpp
+        test_protocol_fields.cpp
+        test_encoding_utils.cpp
+        test_protocol_codes.cpp
 )
 
 target_include_directories(protocol_tests PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/../include"
-    ${CRYPTOPP_INCLUDE_DIR}
 )
 
 target_compile_options(protocol_tests PRIVATE
@@ -38,8 +33,10 @@ target_compile_options(protocol_tests PRIVATE
 
 target_link_libraries(protocol_tests PRIVATE
     Catch2::Catch2WithMain
-    ${CRYPTOPP_LIBRARY}
-    ${CMAKE_DL_LIBS}
+        client_core
 )
 
-add_test(NAME protocol_tests COMMAND protocol_tests)
+add_test(
+        NAME protocol_tests
+        COMMAND protocol_tests
+)

@@ -52,16 +52,24 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
 )
 
 if(NOT SOURCES)
-    message(FATAL_ERROR "No source files found under ${CMAKE_CURRENT_SOURCE_DIR}/src")
+    message(FATAL_ERROR
+            "No source files found under ${CMAKE_CURRENT_SOURCE_DIR}/src")
 endif()
 
-# Build the client executable
-add_executable(client ${SOURCES})
+# main.cpp belongs only to the executable.
+set(CLIENT_MAIN "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
+
+list(REMOVE_ITEM SOURCES "${CLIENT_MAIN}")
+
+# All reusable application logic goes into a library.
+add_library(client_core STATIC
+        ${SOURCES}
+)
 
 # --------------------------------------------------
 # Include directories
 # --------------------------------------------------
-target_include_directories(client PRIVATE
+target_include_directories(client_core PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
         ${CRYPTOPP_INCLUDE_DIR}
 )
@@ -69,26 +77,35 @@ target_include_directories(client PRIVATE
 # --------------------------------------------------
 # Compiler options
 # --------------------------------------------------
-target_compile_options(client PRIVATE
+target_compile_options(client_core PRIVATE
         $<$<CONFIG:Debug>:-g -O0>
         $<$<CONFIG:Release>:-O2>
         $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wpedantic>
 )
 
 # Needed for Boost stacktrace on some platforms/configurations
-target_compile_definitions(client PRIVATE
+target_compile_definitions(client_core PUBLIC
         BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
 )
 
 # --------------------------------------------------
 # Link libraries
 # --------------------------------------------------
-target_link_libraries(client PRIVATE
+target_link_libraries(client_core PUBLIC
         Boost::system
         Boost::thread
         Boost::stacktrace_basic
         ${CRYPTOPP_LIBRARY}
         ${CMAKE_DL_LIBS}
+)
+
+# Actual application
+add_executable(client
+        ${CLIENT_MAIN}
+)
+
+target_link_libraries(client PRIVATE
+        client_core
 )
 
 if(BUILD_TESTING)
