@@ -18,6 +18,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cryptopp/cryptlib.h>
 
 #include "config/client_paths.h"
 #include "crypto/AESWrapper.h"
@@ -400,7 +401,7 @@ void FileAuthentication::backup_file(
     {
         send_encrypted_file_request(file_path, file_name, file_data);
 
-        if (!verify_upload_crc_response(file_data))
+        if (verify_upload_crc_response(file_data))
         {
             send_crc_status_request(file_name, protocol::request::CRC_SUCCESS);
             process_srv_ack_response();
@@ -466,6 +467,12 @@ void FileAuthentication::backup_files(
             continue;
         }
 
-        backup_file(file_path, file_name);
+        try
+        {
+            backup_file(file_path, file_name);
+        }
+        catch (ClientException& e) {
+            std::cout << Color::RED << e.what() << Color::RESET << std::endl;
+        }
     }
 }
