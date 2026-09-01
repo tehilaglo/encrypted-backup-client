@@ -1,3 +1,16 @@
+/**
+ * @file test_encoding_utils.cpp
+ * @brief Unit tests for the hex encoding/decoding helpers in utils/encoding_utils.h.
+ *
+ * @details
+ * Covers round-tripping a binary user ID through bytes_to_hex() and
+ * hex_string_to_byte_array(), preservation of zero and high-bit byte values,
+ * case-insensitive hex parsing, and rejection of malformed or incorrectly
+ * sized hex input.
+ *
+ * @author Tehila Cahnaman
+ */
+
 #include <array>
 #include <string>
 

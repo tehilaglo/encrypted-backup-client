@@ -1,3 +1,17 @@
+/**
+ * @file test_file_authentication.cpp
+ * @brief Unit tests for FileAuthentication's pre-upload input validation.
+ *
+ * @details
+ * Verifies that FileAuthentication::backup_files() skips files with invalid
+ * names or that do not exist — reporting via stdout rather than throwing —
+ * and that it rejects files exceeding MAX_FILE_SIZE with a ClientException.
+ * These cases are all rejected before any network I/O occurs, so the fixture's
+ * socket is constructed but never connected.
+ *
+ * @author Tehila Cahnaman
+ */
+
 #include <fstream>
 #include <iostream>
 #include <boost/asio/io_context.hpp>
@@ -11,6 +25,14 @@ namespace fs = std::filesystem;
 
 namespace
 {
+    /**
+     * @brief Wires up a FileAuthentication instance over an unconnected socket.
+     *
+     * @details
+     * The underlying CommunicationManager requires a live boost::asio socket to
+     * construct, but the validation paths under test never reach the network,
+     * so the socket is left unconnected.
+     */
     class FileAuthenticationFixture
     {
     public:
@@ -33,6 +55,8 @@ namespace
         FileAuthentication file_authentication_;
     };
 
+    /// @brief RAII helper that redirects std::cout into an in-memory buffer for the
+    /// duration of its lifetime, restoring the original stream buffer on destruction.
     class ScopedCoutCapture
     {
     public:
@@ -59,6 +83,8 @@ namespace
         std::streambuf* original_buffer_;
     };
 
+    /// @brief RAII helper that creates a fresh temporary directory and removes it
+    /// (recursively) on destruction, regardless of what tests leave inside it.
     class ScopedTempDirectory
     {
     public:

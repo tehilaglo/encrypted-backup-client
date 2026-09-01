@@ -1,3 +1,16 @@
+/**
+ * @file test_response_deserialization.cpp
+ * @brief Unit tests for Response::deserialize() on well-formed wire buffers.
+ *
+ * @details
+ * Confirms that a fully populated response wire buffer (built via
+ * protocol_test_helpers) round-trips through Response::deserialize() into the
+ * expected header and payload fields, including the edge case of a zero-length
+ * encrypted AES key section.
+ *
+ * @author Tehila Cahnaman
+ */
+
 #include <string>
 #include <vector>
 

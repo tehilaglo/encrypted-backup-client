@@ -1,9 +1,26 @@
+/**
+ * @file protocol_test_helpers.h
+ * @brief Shared helpers for building and inspecting protocol wire bytes in tests.
+ *
+ * @details
+ * Centralizes the byte-layout knowledge (field offsets and sizes) that would
+ * otherwise be duplicated across the protocol test files. Provides:
+ *  - Field offset/size constants mirroring the Request and Response wire layouts.
+ *  - Endianness helpers for producing host-order and network-order byte sequences.
+ *  - Builders for fixed-width C-string fields and complete response payload/wire buffers.
+ *
+ * These helpers only assemble or slice raw bytes; they do not call the production
+ * Request/Response (de)serialization code, so tests built on them stay independent
+ * of the implementation under test.
+ *
+ * @author Tehila Cahnaman
+ */
+
 #pragma once
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
-#include <cstdint>
 #include <cstring>
 #include <optional>
 #include <string>
@@ -15,6 +32,7 @@
 
 namespace protocol_test
 {
+    /** Byte-layout constants mirroring Request's wire format (see protocol/request.h).*/
     namespace request
     {
         inline constexpr std::size_t kHeaderSize =
@@ -43,6 +61,7 @@ namespace protocol_test
         inline constexpr std::size_t kOffsetEncryptedChunkData = kOffsetFileName + FILE_NAME_LEN;
     }
 
+    /** Byte-layout constants mirroring Response's wire format (see protocol/response.h).*/
     namespace response
     {
         inline constexpr std::size_t kHeaderSize =
@@ -52,12 +71,14 @@ namespace protocol_test
             UNIQUE_ID_LEN + sizeof(enc_chunk_size_t) + FILE_NAME_LEN + sizeof(checksum_t);
     }
 
+    /** @brief Reports whether the current host stores multi-byte integers little-endian first.*/
     inline bool is_little_endian_host()
     {
         const std::uint16_t one = 1;
         return *reinterpret_cast<const std::uint8_t*>(&one) == 1;
     }
 
+    /** @brief Returns the raw in-memory (host-endian) byte representation of an integral value.*/
     template <typename T>
     std::array<char, sizeof(T)> host_bytes(const T value)
     {
@@ -66,6 +87,7 @@ namespace protocol_test
         return bytes;
     }
 
+    /** @brief Returns the big-endian ("network order") byte representation of a 16- or 32-bit integer.*/
     template <typename T>
     std::array<char, sizeof(T)> network_bytes(const T value)
     {
@@ -90,18 +112,22 @@ namespace protocol_test
         return bytes;
     }
 
+    /** @brief Converts a fixed-size byte array into a vector, for comparison against sliced wire bytes.*/
     template <std::size_t N>
     std::vector<char> to_vector(const std::array<char, N>& values)
     {
         return {values.begin(), values.end()};
     }
 
+    /** @brief Extracts the byte range `[offset, offset + size)` from a wire buffer.*/
     inline std::vector<char> slice(const std::vector<char>& data, const std::size_t offset, const std::size_t size)
     {
         return {data.begin() + static_cast<std::ptrdiff_t>(offset),
                 data.begin() + static_cast<std::ptrdiff_t>(offset + size)};
     }
 
+    /** @brief Builds a fixed-width, null-padded C-string field, matching the protocol's
+    username/filename truncation behavior (value truncated to `N - 1` bytes, always null-terminated).*/
     template <std::size_t N>
     std::array<char, N> make_fixed_c_string_field(const std::string& value)
     {
@@ -116,6 +142,7 @@ namespace protocol_test
         return field;
     }
 
+    /** @brief Appends `value` to `output` in network byte order.*/
     template <typename T>
     void append_network_field(std::vector<char>& output, const T value)
     {
@@ -123,6 +150,8 @@ namespace protocol_test
         output.insert(output.end(), bytes.begin(), bytes.end());
     }
 
+    /** @brief Assembles a Response payload's fixed fields in wire order: user ID,
+    encrypted AES key, encrypted file size, fixed-width filename, then checksum.*/
     inline std::vector<char> make_response_payload(
         const std::array<char, UNIQUE_ID_LEN>& user_id,
         const std::vector<char>& encrypted_aes_key,
@@ -152,6 +181,9 @@ namespace protocol_test
         return payload;
     }
 
+    /** @brief Wraps a payload with a Response header (version, code, declared payload
+    size) to form a complete wire buffer. `declared_payload_size` defaults to the
+    payload's actual size, but can be overridden to construct malformed inputs.*/
     inline std::vector<char> make_response_wire(
         const version_t version,
         const code_t response_code,

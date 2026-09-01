@@ -1,3 +1,15 @@
+/**
+ * @file test_protocol_codes.cpp
+ * @brief Regression tests pinning the numeric values of protocol operation codes.
+ *
+ * @details
+ * Request and response codes are part of the wire contract shared with the
+ * server, so an accidental renumbering here would silently break
+ * interoperability. These tests fail loudly if any code's value drifts.
+ *
+ * @author Tehila Cahnaman
+ */
+
 #include <catch2/catch_test_macros.hpp>
 
 #include "protocol/protocol_codes.h"

@@ -1,10 +1,21 @@
+/**
+ * @file test_request_serialization.cpp
+ * @brief Unit tests for Request::serialize()'s wire layout and byte order.
+ *
+ * @details
+ * Verifies the zero-initialized default request, the exact field ordering and
+ * offsets of a fully populated request (cross-checked against the layout
+ * constants in protocol_test_helpers.h), and the request's current
+ * host-endian (not network-order) multi-byte field encoding.
+ *
+ * @author Tehila Cahnaman
+ */
+
 #include <array>
-#include <cstdint>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "protocol/protocol_codes.h"
 #include "protocol/request.h"
 #include "protocol_test_helpers.h"
 #include "utils/encoding_utils.h"
@@ -150,6 +161,9 @@ TEST_CASE("Request serialization numeric fields are currently host-endian", "[re
     REQUIRE(file_size_wire == protocol_test::to_vector(protocol_test::host_bytes(file_size)));
     REQUIRE(packet_number_wire == protocol_test::to_vector(protocol_test::host_bytes(packet_number)));
 
+    // On a little-endian host, host-order and network-order (big-endian) bytes only
+    // coincide for palindromic values, so the wire bytes are expected to differ from
+    // network order here; on a big-endian host the two representations are identical.
     if (protocol_test::is_little_endian_host())
     {
         REQUIRE(request_code_wire != protocol_test::to_vector(protocol_test::network_bytes(request_code)));

@@ -1,3 +1,16 @@
+/**
+ * @file test_protocol_fields.cpp
+ * @brief Regression tests for protocol field sizes/types and fixed-width string truncation.
+ *
+ * @details
+ * Combines compile-time static_asserts (field byte sizes, signedness) with
+ * runtime tests of the fixed-width, null-padded username and filename fields
+ * on Request and ResponsePayload: empty values, exact-fit values, and values
+ * that must be truncated with a trailing null terminator preserved.
+ *
+ * @author Tehila Cahnaman
+ */
+
 #include <string>
 #include <type_traits>
 

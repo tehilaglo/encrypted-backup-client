@@ -1,3 +1,17 @@
+/**
+ * @file test_response_malformed.cpp
+ * @brief Unit tests for Response::deserialize()'s rejection of malformed wire buffers.
+ *
+ * @details
+ * Covers empty buffers, headers/fields truncated at every field boundary
+ * (user ID, AES key, encrypted file size, filename, checksum), payload sizes
+ * that are declared smaller or larger than the actual bytes available, and two
+ * currently-accepted edge cases: a zero-length AES-key section and trailing
+ * bytes beyond the declared payload size, which deserialize() silently ignores.
+ *
+ * @author Tehila Cahnaman
+ */
+
 #include <string>
 #include <vector>
 
@@ -18,6 +32,7 @@ namespace
     const std::string kUserIdHex = "00112233445566778899aabbccddeeff";
     const std::vector<char> kAesKey{'k', 'e', 'y', '!'};
 
+    /** @brief Builds one well-formed response payload shared by the truncation test cases below.*/
     std::vector<char> make_valid_payload()
     {
         const auto user_id = hex_string_to_byte_array<UNIQUE_ID_LEN>(kUserIdHex);
@@ -30,11 +45,14 @@ namespace
         );
     }
 
+    /** @brief Wraps make_valid_payload() with a matching header to form a complete, valid wire buffer.*/
     std::vector<char> make_valid_wire()
     {
         return protocol_test::make_response_wire(kVersion, kResponseCode, make_valid_payload());
     }
 
+    /** @brief Builds a wire buffer whose payload is cut off after `payload_bytes_to_keep` bytes,
+    while the header still declares the full payload size — simulating a truncated read.*/
     std::vector<char> make_truncated_wire(const std::size_t payload_bytes_to_keep)
     {
         auto wire = make_valid_wire();
