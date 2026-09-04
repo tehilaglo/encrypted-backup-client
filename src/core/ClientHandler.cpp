@@ -30,11 +30,6 @@ namespace fs = std::filesystem;
 
 namespace
 {
-
-    /** Stores the path to the server configuration file */
-    const fs::path CONFIG_FILE_PATH =
-        fs::current_path().parent_path() / SRV_CONFIG_FILE;
-
     /** Defines the size of the payload used for the disconnect request */
     constexpr payload_size_t DISCONNECT_PAYLOAD_SIZE =
         USERNAME_LEN + RSA_KEY_LEN + sizeof(enc_chunk_size_t) + FILE_NAME_LEN;
@@ -56,7 +51,7 @@ ClientHandler::ClientHandler()
  */
 void ClientHandler::connect()
 {
-    const auto [server_ip, server_port] = load_server_address(CONFIG_FILE_PATH);
+    const auto [server_ip, server_port] = load_server_address(get_server_config_path());
 
     boost::asio::ip::tcp::resolver resolver(io_context_);
     boost::system::error_code error;
