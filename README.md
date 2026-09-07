@@ -124,6 +124,8 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --target client
 ```
 
+On macOS, no additional architecture flag is normally required. CMake detects the native architecture before enabling the compiler, including Apple Silicon hosts when CMake is launched from a Rosetta-translated terminal. An explicitly supplied `-DCMAKE_OSX_ARCHITECTURES=...` value is still respected for intentional cross-architecture builds.
+
 The current CMake configuration places the generated executable in the repository root.
 
 Run it with:
@@ -210,13 +212,22 @@ The test configuration first looks for an installed **Catch2 v3** package. If on
 
 A scripted terminal demonstration is available under `demo/`.
 
-Run:
+Run it from the repository root:
 
 ```bash
 ./demo/run_demo.sh
 ```
 
-The script prepares sample terminal input and launches the client against files under `demo/demo_files/`.
+The demo script automatically:
+
+1. configures a Release build under `build/demo/`;
+2. builds the `client` executable with testing disabled;
+3. creates the temporary scripted input used by the demonstration;
+4. generates a 21 MiB test file at runtime to exercise the client's 20 MiB file-size limit without storing a large binary asset in the repository;
+5. launches the client against the files under `demo/demo_files/`;
+6. removes temporary demo-generated files when the script exits.
+
+On macOS, the top-level CMake configuration selects the native build architecture before enabling the compiler. On Apple Silicon, this keeps normal builds and the demo aligned with native arm64 Homebrew dependencies even when CMake is launched from a Rosetta-translated terminal.
 
 A compatible backup server must already be running at the address specified in `server_config.json`.
 
@@ -225,7 +236,11 @@ The demo exercises behavior such as:
 * username validation;
 * directory and file selection;
 * invalid filename handling;
-* multiple file uploads.
+* oversized-file rejection;
+* multiple encrypted file uploads.
+
+The generated `client` executable and `build/demo/` directory are build artifacts and may be removed manually when no longer needed.
+
 
 ## Project Structure
 

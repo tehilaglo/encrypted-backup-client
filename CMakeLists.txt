@@ -14,6 +14,47 @@
 
 cmake_minimum_required(VERSION 3.16)
 
+# ------------------------------------------------------------------------------
+# macOS architecture
+# ------------------------------------------------------------------------------
+
+# Select the native macOS architecture before project() enables the compiler.
+# hw.optional.arm64 reports the physical hardware capability even when CMake is
+# launched from a terminal running under Rosetta.
+#
+# An explicitly supplied CMAKE_OSX_ARCHITECTURES value is respected, allowing
+# intentional cross-architecture builds when needed.
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin" AND NOT CMAKE_OSX_ARCHITECTURES)
+    execute_process(
+            COMMAND /usr/sbin/sysctl -in hw.optional.arm64
+            RESULT_VARIABLE ARM64_DETECTION_RESULT
+            OUTPUT_VARIABLE ARM64_SUPPORTED
+            ERROR_QUIET
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    if(ARM64_DETECTION_RESULT EQUAL 0 AND ARM64_SUPPORTED STREQUAL "1")
+        set(DETECTED_MACOS_ARCHITECTURE arm64)
+    else()
+        execute_process(
+                COMMAND /usr/bin/uname -m
+                OUTPUT_VARIABLE DETECTED_MACOS_ARCHITECTURE
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+    endif()
+
+    if(NOT DETECTED_MACOS_ARCHITECTURE)
+        message(FATAL_ERROR "Unable to detect the native macOS architecture.")
+    endif()
+
+    set(
+            CMAKE_OSX_ARCHITECTURES
+            "${DETECTED_MACOS_ARCHITECTURE}"
+            CACHE STRING "Target architecture for macOS builds"
+            FORCE
+    )
+endif()
+
 project(client LANGUAGES CXX)
 
 include(CTest)
