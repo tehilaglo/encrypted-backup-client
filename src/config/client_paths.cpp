@@ -4,9 +4,8 @@
  *
  * @details
  * This module resolves file paths used by the backup client relative to the
- * process working directory. Client-owned files are stored in the working
- * directory, while the server configuration file is expected one directory
- * above it.
+ * process working directory. Client-owned and server configuration files are stored in the working
+ * directory.
  *
  * @author Tehila Cahnaman
  */

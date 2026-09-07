@@ -25,35 +25,25 @@ inline constexpr const char* PRIVATE_KEY_FILE = "private.key";
 
 /**
  * @brief Returns the current working directory.
- *
- * @return Current process working directory.
  */
 fs::path get_working_dir();
 
 /**
  * @brief Returns the path to the client information file.
- *
- * @return Path to `me.info` in the current working directory.
  */
 fs::path get_client_info_path();
 
 /**
  * @brief Returns the path to the temporary AES key file.
- *
- * @return Path to `aes.key` in the current working directory.
  */
 fs::path get_aes_key_path();
 
 /**
  * @brief Returns the path to the private RSA key file.
- *
- * @return Path to `private.key` in the current working directory.
  */
 fs::path get_private_key_path();
 
 /**
  * @brief Returns the path to the server configuration file.
- *
- * @return Path to `server_config.json` in the parent of the current working directory.
  */
 fs::path get_server_config_path();
