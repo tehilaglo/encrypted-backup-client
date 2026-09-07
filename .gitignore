@@ -8,7 +8,7 @@
 # CMake build directories
 # =========================
 cmake-build-*/
-build/
+/build/
 out/
 
 # =========================
@@ -22,10 +22,13 @@ DartConfiguration.tcl
 Testing/
 _deps/
 
-# =========================
 # Large demo-generated assets
-# =========================
 demo/demo_files/large_demo_video.mp4
+
+# =========================
+# Executables
+# =========================
+/client
 
 # =========================
 # Ninja
