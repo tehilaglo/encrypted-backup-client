@@ -471,7 +471,7 @@ void FileAuthentication::backup_files(
         {
             backup_file(file_path, file_name);
         }
-        catch (ClientException& e) {
+        catch (const ClientException& e) {
             std::cout << Color::RED << e.what() << Color::RESET << std::endl;
         }
     }
