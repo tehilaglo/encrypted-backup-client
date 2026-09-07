@@ -5,7 +5,7 @@
  * @details
  * Verifies that FileAuthentication::backup_files() skips files with invalid
  * names or that do not exist — reporting via stdout rather than throwing —
- * and that it rejects files exceeding MAX_FILE_SIZE with a ClientException.
+ * and that it reports and skips files exceeding MAX_FILE_SIZE
  * These cases are all rejected before any network I/O occurs, so the fixture's
  * socket is constructed but never connected.
  *
@@ -185,11 +185,22 @@ TEST_CASE(
         == static_cast<std::uintmax_t>(MAX_FILE_SIZE) + 1U
     );
 
-    REQUIRE_THROWS_AS(
+    ScopedCoutCapture output;
+
+    REQUIRE_NOTHROW(
         fixture.get_file_authentication().backup_files(
             temp_directory.path().string(),
             {"oversized.bin"}
-        ),
-        ClientException
+        )
+    );
+
+    const std::string expected_message =
+        "File too large. The maximum allowed file size is "
+        + std::to_string(MAX_FILE_SIZE)
+        + " bytes.";
+
+    REQUIRE(
+        output.str().find(expected_message)
+        != std::string::npos
     );
 }
