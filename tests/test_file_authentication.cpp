@@ -55,8 +55,8 @@ namespace
         FileAuthentication file_authentication_;
     };
 
-    /// @brief RAII helper that redirects std::cout into an in-memory buffer for the
-    /// duration of its lifetime, restoring the original stream buffer on destruction.
+    /** @brief RAII helper that redirects std::cout into an in-memory buffer for the
+    duration of its lifetime, restoring the original stream buffer on destruction.*/
     class ScopedCoutCapture
     {
     public:
@@ -83,8 +83,8 @@ namespace
         std::streambuf* original_buffer_;
     };
 
-    /// @brief RAII helper that creates a fresh temporary directory and removes it
-    /// (recursively) on destruction, regardless of what tests leave inside it.
+    /** @brief RAII helper that creates a fresh temporary directory and removes it
+    (recursively) on destruction, regardless of what tests leave inside it.*/
     class ScopedTempDirectory
     {
     public:
