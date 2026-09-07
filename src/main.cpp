@@ -72,22 +72,34 @@ int main()
     {
         client_handler.run();
     }
-    catch (const ClientException& exception)
+    catch (const UserCancelledException& e)
     {
         handle_startup_failure(
             client_handler,
-            exception,
-            std::string(Color::RED) + exception.what() + std::string(Color::RESET)
+            e,
+            std::string(Color::GREEN) + e.what() + std::string(Color::RESET)
         );
     }
-    catch (const std::exception& exception)
+    catch (const ClientException& e)
     {
         handle_startup_failure(
             client_handler,
-            exception,
+            e,
+            std::string(Color::RED) + e.what() + std::string(Color::RESET)
+        );
+    }
+    catch (const std::exception& e)
+    {
+        handle_startup_failure(
+            client_handler,
+            e,
             "Hmm... Something seems to have gone wrong."
         );
     }
+
+    cleanup_temporary_aes_key();
+
+    return 0;
 
     cleanup_temporary_aes_key();
 

@@ -22,6 +22,7 @@
 #include "protocol/response.h"
 #include "registration/key_exchange.h"
 #include "ui/console_ui.h"
+#include "ui/input_keywords.h"
 #include "utils/input_validation.h"
 #include "utils/logger.h"
 
@@ -129,6 +130,9 @@ namespace {
      * @brief Prompts the user until a valid username is entered.
      *
      * @return Valid username.
+     *
+     * @throws UserCancelledException if the user enters `quit` or closes the
+     * input stream.
      */
     std::string prompt_valid_username()
     {
@@ -137,10 +141,20 @@ namespace {
         while (true)
         {
             std::cout << Color::GREEN
-                      << "Please enter a username:"
-                      << Color::RESET << std::endl;
+                  << "Please enter a username."
+                  << std::endl
+                  << "Type '" << CANCEL_KEYWORD << "' to cancel:"
+                  << Color::RESET << std::endl;
 
-            std::cin >> username;
+            if (!(std::cin >> username))
+            {
+                throw UserCancelledException("Registration cancelled.");
+            }
+
+            if (username == CANCEL_KEYWORD)
+            {
+                throw UserCancelledException("Registration cancelled.");
+            }
 
             if (is_valid_username(username))
             {

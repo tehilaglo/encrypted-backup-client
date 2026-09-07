@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "ui/console_ui.h"
+#include "ui/input_keywords.h"
 #include "utils/input_validation.h"
 
 /** Defines the keyword used to terminate input */
@@ -46,34 +47,56 @@ namespace {
  *
  * @return Valid directory name entered by the user.
  *
- * @throws ClientException if the directory name is invalid or the directory does not exist.
+ * @throws UserCancelledException if the user enters `quit` or closes the input stream.
  */
 std::string prompt_backup_directory()
 {
-    std::string dir_name;
-
-    std::cout << Color::GREEN
-              << "Please enter the directory you want to back up:"
-              << Color::RESET << std::endl;
-
-    std::cin >> dir_name;
-    discard_remaining_input_line();
-
-    boost::trim(dir_name);
-
-    if (!is_valid_dir_name(dir_name))
+    while (true)
     {
-        throw ClientException("Invalid directory name: " + dir_name);
+        std::string dir_name;
+
+        std::cout << Color::GREEN
+                  << "Please enter the directory you want to back up."
+                  << std::endl
+                  << "Type '" << CANCEL_KEYWORD << "' to cancel:"
+                  << Color::RESET << std::endl;
+
+        if (!(std::cin >> dir_name))
+        {
+            throw UserCancelledException("Backup cancelled.");
+        }
+
+        discard_remaining_input_line();
+        boost::trim(dir_name);
+
+        if (dir_name == CANCEL_KEYWORD)
+        {
+            throw UserCancelledException("Backup cancelled.");
+        }
+
+        try {
+            if (!is_valid_dir_name(dir_name))
+            {
+                throw ClientException("Invalid directory name: " + dir_name);
+            }
+
+            const std::filesystem::path dir_path(dir_name);
+
+            if (!std::filesystem::exists(dir_path) || !std::filesystem::is_directory(dir_path))
+            {
+                throw ClientException("Directory not found: " + dir_name);
+            }
+
+            return dir_name;
+        }
+        catch (const ClientException& exception)
+        {
+            std::cerr << Color::RED
+                      << exception.what()
+                      << " Please try again."
+                      << Color::RESET << std::endl;
+        }
     }
-
-    const std::filesystem::path dir_path(dir_name);
-
-    if (!std::filesystem::exists(dir_path) || !std::filesystem::is_directory(dir_path))
-    {
-        throw ClientException("Directory not found: " + dir_name);
-    }
-
-    return dir_name;
 }
 
 /**
@@ -83,40 +106,57 @@ std::string prompt_backup_directory()
  *
  * @details
  * The user may enter one file name per line. Input collection ends when the user
- * enters the keyword `done`.
+ * enters `done`. Entering `quit` or closing the input stream cancels the backup.
  *
- * @throws ClientException if no file names are provided.
+ * @throws UserCancelledException if the user enters `quit` or closes the input stream.
  */
 std::vector<std::string> prompt_files_to_backup()
 {
-    std::vector<std::string> file_names;
-    std::string user_input;
-
-    std::cout << Color::GREEN
-              << "Please enter the file names you want to back up, one per line."
-              << std::endl
-              << "Type '" << END_KEYWORD << "' when you are done:"
-              << Color::RESET << std::endl;
-
-    while (std::getline(std::cin, user_input))
+    while (true)
     {
-        boost::trim(user_input);
+        std::vector<std::string> file_names;
+        std::string user_input;
 
-        if (user_input == END_KEYWORD)
+        std::cout << Color::GREEN
+                  << "Please enter the file names you want to back up, one per line."
+                  << std::endl
+                  << "Type '" << END_KEYWORD << "' when you are done, or '"
+                  << CANCEL_KEYWORD << "' to cancel:"
+                  << Color::RESET << std::endl;
+
+        while (std::getline(std::cin, user_input))
         {
-            break;
+            boost::trim(user_input);
+
+            if (user_input == CANCEL_KEYWORD)
+            {
+                throw UserCancelledException("File selection cancelled.");
+            }
+
+            if (user_input == END_KEYWORD)
+            {
+                break;
+            }
+
+            if (!user_input.empty())
+            {
+                file_names.push_back(user_input);
+            }
         }
 
-        if (!user_input.empty())
+        if (!std::cin)
         {
-            file_names.push_back(user_input);
+            throw UserCancelledException("File selection cancelled.");
         }
-    }
 
-    if (file_names.empty())
-    {
-        throw ClientException("No backup files were provided.");
-    }
+        if (!file_names.empty())
+        {
+            return file_names;
+        }
 
-    return file_names;
+        std::cerr << Color::RED
+                  << "No backup files were provided. Please try again."
+                  << Color::RESET << std::endl;
+
+    }
 }

@@ -34,6 +34,21 @@ public:
 };
 
 /**
+ * @class UserCancelledException
+ * @brief Signals that the user intentionally cancelled the current workflow.
+ */
+class UserCancelledException final : public ClientException
+{
+public:
+    explicit UserCancelledException(
+        const std::string& message = "Operation cancelled by user."
+    )
+        : ClientException(message)
+    {
+    }
+};
+
+/**
  * @brief Calculates the CRC32 checksum of a data buffer.
  *
  * @param buffer Pointer to the data buffer.
