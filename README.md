@@ -1,145 +1,290 @@
 # Encrypted Backup Client
 
-## Overview
+A C++17 command-line backup client that communicates with a remote server over TCP, performs RSA-based key exchange, encrypts files with AES, and transfers them using a custom binary protocol.
 
-This repository contains a C++ client for an encrypted backup workflow.
+> **Project scope:** This repository contains the **client application only**. A compatible backup server implementing the same protocol must be running before registration or file uploads can succeed.
 
-- Connects to a remote server over TCP.
-- Performs registration or re-registration.
-- Encrypts/authenticates files before transfer.
-- Lets the user select files from a chosen directory for backup.
+## What This Project Demonstrates
 
-Main application entry point: `src/main.cpp` (build target: `client`).
+This project was built to practice and demonstrate:
 
-## Stack
+* client-server communication over TCP;
+* binary protocol design and serialization;
+* modular C++ application architecture;
+* RSA and AES cryptographic workflows;
+* chunked file transfer;
+* integrity verification and retry handling;
+* persistent client identity and re-registration;
+* automated testing with Catch2 and CTest.
 
-- **Language:** C++17
-- **Build system:** CMake (`cmake_minimum_required(VERSION 3.16)`)
-- **Primary libraries/frameworks:**
-  - Boost (`system`, `thread`, `stacktrace_basic`, and JSON usage in code)
-  - Crypto++
-- **Package manager:**
-  - No repository-level package manager is configured.
-  - Dependencies are discovered via CMake (`find_package` / `find_library`).
-  - TODO: Document the team-preferred dependency installation method per OS.
+## Features
 
-## Requirements
+* TCP communication using Boost.Asio
+* New-client registration and existing-client re-registration
+* RSA public-key exchange
+* AES key delivery encrypted with the client's RSA public key
+* AES encryption of files before transmission
+* Chunked encrypted file uploads
+* CRC32-based file integrity verification
+* Retry handling when CRC verification fails
+* Binary request serialization and response deserialization
+* Validation of malformed protocol responses
+* Interactive directory and file selection
+* Local persistence of client identity and key material
+* Catch2 test suite integrated with CTest
 
-- CMake `>= 3.16`
-- C++17-compatible compiler (Clang/GCC)
-- Boost `>= 1.75` with components:
-  - `system`
-  - `thread`
-  - `stacktrace_basic`
-- Crypto++ development headers and library
+## How It Works
 
-> Note: `CMakeLists.txt` searches common macOS/Homebrew and `/usr/local` paths for Crypto++.
+A typical backup session follows this flow:
 
-## Project Setup
+1. The client reads the server address from `server_config.json`.
+2. It establishes a TCP connection with the configured server.
+3. If no local client identity exists, the client performs registration.
+4. Otherwise, it attempts re-registration using its stored credentials.
+5. During key exchange:
 
-From the `client/` directory:
+  * the client generates an RSA key pair;
+  * the public key is sent to the server;
+  * the server returns an AES key encrypted with that RSA public key;
+  * the client decrypts and stores the AES key locally for the session.
+6. The user selects a directory and files to back up.
+7. Each selected file is:
+
+  * validated;
+  * encrypted using AES;
+  * split into protocol chunks;
+  * transmitted to the server.
+8. The server returns file metadata and a CRC checksum.
+9. The client compares the returned information with its local data and reports success or retries the transfer when necessary.
+10. The client disconnects and removes its temporary AES key during normal shutdown.
+
+## Architecture
+
+The source is organized by responsibility:
+
+| Module         | Responsibility                                                                       |
+| -------------- | ------------------------------------------------------------------------------------ |
+| `config`       | Runtime paths and server configuration                                               |
+| `core`         | Main application workflow and TCP communication                                      |
+| `crypto`       | AES/RSA operations and encrypted file-transfer logic                                 |
+| `protocol`     | Protocol types, operation codes, request serialization, and response deserialization |
+| `registration` | Registration, re-registration, credential management, and key exchange               |
+| `ui`           | Console interaction and backup selection                                             |
+| `utils`        | Input validation, encoding, logging, and supporting utilities                        |
+
+At the center of the application, `ClientHandler` coordinates connection, registration, backup, and disconnection. `CommunicationManager` provides the transport layer, while the protocol classes convert between C++ objects and the binary representation sent over the network.
+
+## Technology
+
+* **Language:** C++17
+* **Build system:** CMake 3.16+
+* **Networking:** Boost.Asio
+* **Supporting Boost components:** System, Thread, Stacktrace
+* **Cryptography:** Crypto++
+* **Testing:** Catch2 v3 and CTest
+
+## Supported Environment
+
+The documented build and demo workflow currently targets Unix-like development environments such as **macOS and Linux**.
+
+Windows/MSVC support has not been verified.
+
+## Prerequisites
+
+Before building the project, install:
+
+* a C++17-compatible compiler;
+* CMake 3.16 or newer;
+* Boost 1.75 or newer with:
+
+  * `system`
+  * `thread`
+  * `stacktrace_basic`;
+* Crypto++ development headers and library;
+* Git, if Catch2 needs to be retrieved automatically while configuring the tests.
+
+### Crypto++ Location
+
+CMake searches common Homebrew and `/usr/local` installation locations automatically.
+
+For a custom Crypto++ installation:
 
 ```bash
-cmake -S . -B cmake-build-debug -DCMAKE_BUILD_TYPE=Debug
-cmake --build cmake-build-debug --target client
+cmake -S . -B build \
+  -DCRYPTOPP_INCLUDE_DIR=/path/to/include \
+  -DCRYPTOPP_LIBRARY=/path/to/libcryptopp
 ```
 
-The executable output is configured to the project root as `./client`.
+## Build
 
-## Run
+From the repository root:
 
-Run from the `client/` directory after building:
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target client
+```
+
+The current CMake configuration places the generated executable in the repository root.
+
+Run it with:
 
 ```bash
 ./client
 ```
 
-At runtime, the app expects:
+For a debug build:
 
-- `../server_config.json` (relative to current working directory)
-- and will create/use local files in the working directory, including:
-  - `me.info`
-  - `name.info`
-  - `transfer.info`
-  - `private.key`
-  - `aes.key` (temporary; removed on exit)
-  - `client.log`
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build --target client
+```
 
-Expected server config shape:
+## Configuration
+
+Edit `server_config.json` before running the client:
 
 ```json
 {
   "server": {
     "host": "127.0.0.1",
-    "port": 12345
+    "port": 1234
   }
 }
 ```
 
-## Scripts
+The host and port must match the compatible server instance.
 
-- `cleanup.sh`
-  - Removes `me.info`, `private.key`, and `client.log` under `client/`.
+`server_config.json` is resolved relative to the client's **current working directory**, so the standard workflow is to run `./client` from the repository root.
 
-  ```bash
-  ./cleanup.sh
-  ```
+## Run
 
-- `demo/run_demo.sh`
-  - Creates demo input (`demo/user_input_demo.txt`) and runs `./client` with redirected input.
+Start the compatible backup server first.
 
-  ```bash
-  ./demo/run_demo.sh
-  ```
+Then, from the repository root:
 
-## Environment Variables
+```bash
+./client
+```
 
-No runtime environment variables were detected in the current codebase (`getenv` usage not found).
+The application will guide you through:
 
-If you add env-based configuration later, document it here in this format:
-
-| Variable | Required | Default | Description |
-| --- | --- | --- | --- |
-| `TODO_ENV_VAR` | yes/no | `TODO` | TODO |
+1. registration or re-registration;
+2. backup-directory selection;
+3. file selection;
+4. encrypted file upload.
 
 ## Tests
 
-- No CMake/CTest test targets are currently defined (`add_test` not found).
-- The `stubs/` folder appears to contain standalone/support sources, but no automated test harness is configured.
+The current automated test suite covers:
 
-TODO:
-- Define and document the official test strategy and commands (unit/integration/manual).
+* protocol constants and operation codes;
+* request serialization;
+* response deserialization;
+* malformed and incomplete responses;
+* encoding utilities;
+* pre-upload file validation.
+
+Configure the project with testing enabled:
+
+```bash
+cmake -S . -B build \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DBUILD_TESTING=ON
+```
+
+Build the test executable:
+
+```bash
+cmake --build build --target protocol_tests
+```
+
+Run the suite through CTest:
+
+```bash
+ctest --test-dir build --output-on-failure
+```
+
+The test configuration first looks for an installed **Catch2 v3** package. If one is not available, CMake retrieves the pinned **Catch2 v3.6.0** release using `FetchContent`.
+
+## Demo
+
+A scripted terminal demonstration is available under `demo/`.
+
+Run:
+
+```bash
+./demo/run_demo.sh
+```
+
+The script prepares sample terminal input and launches the client against files under `demo/demo_files/`.
+
+A compatible backup server must already be running at the address specified in `server_config.json`.
+
+The demo exercises behavior such as:
+
+* username validation;
+* directory and file selection;
+* invalid filename handling;
+* multiple file uploads.
 
 ## Project Structure
 
 ```text
-client/
-├── CMakeLists.txt
-├── cleanup.sh
-├── demo/
-│   ├── demo_files/
-│   ├── run_demo.sh
-│   └── user_input_demo.txt
-├── include/
-│   ├── config/
-│   ├── core/
-│   ├── crypto/
-│   ├── protocol/
-│   ├── registration/
-│   ├── ui/
-│   └── utils/
-├── src/
-│   ├── config/
-│   ├── core/
-│   ├── crypto/
-│   ├── protocol/
-│   ├── registration/
-│   ├── ui/
-│   ├── utils/
-│   └── main.cpp
-└── stubs/
+.
+├── include/              Public headers organized by module
+├── src/                  Client implementation
+├── tests/                Catch2 automated tests
+├── demo/                 Scripted demonstration and sample files
+├── CMakeLists.txt        Main CMake build configuration
+├── server_config.json    Server connection configuration
+├── cleanup.sh            Removes selected generated client state
+└── LICENSE               MIT license
 ```
+
+## Runtime Files
+
+During normal operation, the client may create local state and key files, including:
+
+* `me.info` — client identity and registration information;
+* `private.key` — locally stored RSA private key;
+* `aes.key` — temporary AES key used during the active client session;
+* `client.log` — application diagnostic log.
+
+Additional runtime filenames are defined by the client configuration for supporting workflows.
+
+The AES key is removed during normal application shutdown. An abnormal termination may leave the file behind.
+
+These files should **never be committed to Git**.
+
+## Cleanup
+
+The provided cleanup script can remove selected generated files:
+
+```bash
+./cleanup.sh
+```
+
+Currently, it removes:
+
+* `me.info`
+* `private.key`
+* `client.log`
+
+It is not intended to guarantee removal of every possible generated runtime file.
+
+## Security Notice
+
+This project is an educational and portfolio implementation and has **not been independently security-audited**.
+
+It should not be used to protect production or sensitive data without a thorough security review.
+
+In particular:
+
+* CRC32 is used for transfer-integrity verification and is **not** a cryptographic authentication mechanism.
+* Local key material is stored in files rather than a protected operating-system key store.
+* Base64 encoding of key material is an encoding format, **not encryption**.
+* The custom network protocol and its cryptographic design should undergo a dedicated threat-model and security review before production use.
 
 ## License
 
-TODO: Add license information. No license file was found in this repository snapshot.
+Distributed under the [MIT License](LICENSE).
