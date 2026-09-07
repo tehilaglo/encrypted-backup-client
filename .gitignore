@@ -23,6 +23,11 @@ Testing/
 _deps/
 
 # =========================
+# Large demo-generated assets
+# =========================
+demo/demo_files/large_demo_video.mp4
+
+# =========================
 # Ninja
 # =========================
 build.ninja
