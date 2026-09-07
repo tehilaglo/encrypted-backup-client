@@ -143,7 +143,7 @@ namespace {
             std::cout << Color::GREEN
                   << "Please enter a username."
                   << std::endl
-                  << "Type '" << CANCEL_KEYWORD << "' to cancel:"
+                  << "Type '" << input_keywords::CANCEL << "' to cancel:"
                   << Color::RESET << std::endl;
 
             if (!(std::cin >> username))
@@ -151,7 +151,7 @@ namespace {
                 throw UserCancelledException("Registration cancelled.");
             }
 
-            if (username == CANCEL_KEYWORD)
+            if (username == input_keywords::CANCEL)
             {
                 throw UserCancelledException("Registration cancelled.");
             }

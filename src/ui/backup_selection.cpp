@@ -25,8 +25,6 @@
 #include "ui/input_keywords.h"
 #include "utils/input_validation.h"
 
-/** Defines the keyword used to terminate input */
-constexpr auto END_KEYWORD = "done";
 
 namespace {
     /**
@@ -58,7 +56,7 @@ std::string prompt_backup_directory()
         std::cout << Color::GREEN
                   << "Please enter the directory you want to back up."
                   << std::endl
-                  << "Type '" << CANCEL_KEYWORD << "' to cancel:"
+                  << "Type '" << input_keywords::CANCEL << "' to cancel:"
                   << Color::RESET << std::endl;
 
         if (!(std::cin >> dir_name))
@@ -69,7 +67,7 @@ std::string prompt_backup_directory()
         discard_remaining_input_line();
         boost::trim(dir_name);
 
-        if (dir_name == CANCEL_KEYWORD)
+        if (dir_name == input_keywords::CANCEL)
         {
             throw UserCancelledException("Backup cancelled.");
         }
@@ -120,20 +118,20 @@ std::vector<std::string> prompt_files_to_backup()
         std::cout << Color::GREEN
                   << "Please enter the file names you want to back up, one per line."
                   << std::endl
-                  << "Type '" << END_KEYWORD << "' when you are done, or '"
-                  << CANCEL_KEYWORD << "' to cancel:"
+                  << "Type '" << input_keywords::FINISH_SELECTION << "' when you are done, or '"
+                  << input_keywords::CANCEL << "' to cancel:"
                   << Color::RESET << std::endl;
 
         while (std::getline(std::cin, user_input))
         {
             boost::trim(user_input);
 
-            if (user_input == CANCEL_KEYWORD)
+            if (user_input == input_keywords::CANCEL)
             {
                 throw UserCancelledException("File selection cancelled.");
             }
 
-            if (user_input == END_KEYWORD)
+            if (user_input == input_keywords::FINISH_SELECTION)
             {
                 break;
             }
