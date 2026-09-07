@@ -29,6 +29,7 @@ demo/demo_files/large_demo_video.mp4
 # Executables
 # =========================
 /client
+/protocol_tests
 
 # =========================
 # Ninja
